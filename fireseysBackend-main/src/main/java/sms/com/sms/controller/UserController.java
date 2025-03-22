@@ -19,7 +19,7 @@ import sms.com.sms.dto.AuthRequest;
 import sms.com.sms.dto.AuthResponse;
 import sms.com.sms.model.Users;
 import sms.com.sms.service.OTPService;
-import sms.com.sms.service.TwilioSMSService;
+
 import sms.com.sms.service.UserServiceImpl;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 public class UserController {
 
     private final UserServiceImpl service;
-    private final TwilioSMSService twilioSMSService;
+    
     private final OTPService otpService;
     private final AuthenticationManager authenticationManager;
     
@@ -100,7 +100,7 @@ public class UserController {
                          "This is an emergency situation, and your immediate action is required.\n" +
                          "Stay alert and take care.\n\nLocation: Moremi Hall, Osun State Government Secretariat, Oke Pupa, Abere, Osogbo\n" +
                          "[Your Organization/FireEye]";
-        return ResponseEntity.ok(twilioSMSService.sendDefaultMessageToAllUsers(message));
+        return ResponseEntity.ok("null");
     }
 
     /** Send gas detection alert */
@@ -111,7 +111,7 @@ public class UserController {
                          "This is an emergency situation, and your immediate action is required.\n" +
                          "Stay alert and take care.\n\nLocation: FOUNTAIN UNIVERSITY / Adegunwa Kitchen\n" +
                          "[Your Organization/ROBOTIC GROUP]";
-        return ResponseEntity.ok(twilioSMSService.sendDefaultMessageToAllUsers(message));
+                         return ResponseEntity.ok("SMS not integrate");
     }
 
     /** Validate OTP and register user */

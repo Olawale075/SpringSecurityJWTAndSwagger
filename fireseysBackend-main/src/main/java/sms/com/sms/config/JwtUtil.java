@@ -3,10 +3,8 @@ package sms.com.sms.config;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-
 import java.util.Date;
 import java.util.function.Function;
 
@@ -15,9 +13,9 @@ public class JwtUtil {
 
     private final String SECRET_KEY = "RbthOApwUHf33z9v2uR/eNpNUvv3zczUh/ffaMJx8YU="; // Use a strong secret key
 
-    public String generateToken(String userDetails) {
+    public String generateToken(String username) { // ✅ Pass username (phone number)
         return Jwts.builder()
-                .setSubject(userDetails)
+                .setSubject(username) // ✅ Store phone number as subject
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours validity
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
@@ -44,8 +42,9 @@ public class JwtUtil {
                 .getBody();
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        return (userDetails.equals(extractUsername(token)) && !isTokenExpired(token));
+    public boolean isTokenValid(String token, UserDetails userDetails) { // ✅ Fixed
+        String username = extractUsername(token);
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
     private boolean isTokenExpired(String token) {

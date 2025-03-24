@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -42,15 +43,15 @@ public class UserController {
     private static final int MAX_VALIDATED_USERS = 20;
 
     /** Get all users */
-    @GetMapping("/user/admin/")
-    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin/")
+    
     public List<Users> getAllReceiverDetails() {
         return service.getAllDetails();
     }
 
     /** Get logged-in user details */
-    @GetMapping("/user/admin//details")
-    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/admin//details")
+   
     public ResponseEntity<UserDetails> getUserDetails() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -68,32 +69,47 @@ public class UserController {
         return ResponseEntity.ok(result);
     }
     /** Authenticate user and return JWT token */
-    @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
-        try {
-            System.out.println("🔹 Attempting login for: " + request.getPhoneNumber());
-    
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getPhoneNumber(), request.getPassword())
-            );
-    
-            System.out.println("✅ Authentication successful!");
-    
-            UserDetails userDetails = service.loadUserByUsername(request.getPhoneNumber());
-            System.out.println("🔹 Loaded User: " + userDetails.getUsername());
-    
-            String token = jwtUtil.generateToken(userDetails.getUsername());
-    
-            return ResponseEntity.ok(new AuthResponse(token));
-        } catch (Exception e) {
-            System.out.println("❌ Authentication failed: " + e.getMessage());
-            return ResponseEntity.status(401).body("Invalid credentials");
-        }
+   @PostMapping("/auth/login")
+public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+    try {
+        System.out.println("🔹 Attempting login for: " + request.getPhoneNumber());
+
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.getPhoneNumber(), request.getPassword())
+        );
+
+        System.out.println("✅ Authentication successful!");
+
+        UserDetails userDetails = service.loadUserByUsername(request.getPhoneNumber());
+        System.out.println("🔹 Loaded User: " + userDetails.getUsername());
+
+        String token = jwtUtil.generateToken(userDetails.getUsername());
+
+        return ResponseEntity.ok(new AuthResponse(token));
+    } catch (BadCredentialsException e) {
+        System.out.println("❌ Invalid Credentials");
+        return ResponseEntity.status(401).body("Invalid credentials"+e.getMessage());
+    } catch (Exception e) {
+        e.printStackTrace(); // Print full error stack trace
+        return ResponseEntity.status(403).body("Forbidden" +e.getMessage());
+    }
+}
+@GetMapping("/test")
+public ResponseEntity<String> testToken(@RequestHeader(value = "Authorization", required = false) String token) {
+    try {
+        System.out.println("🔹 Received Token: " + token);
+    return ResponseEntity.ok("Token received successfully");
+        
+    } catch (Exception e) {
+        e.printStackTrace(); // Print full error stack trace
+        return ResponseEntity.status(403).body("Forbidden" +e.getMessage());
     }
     
+}
+
 
     /** Send fire detection alert */
-    @PostMapping("/user/send-message-to-all-for-fireDetector")
+    @PostMapping("/send-message-to-all-for-fireDetector")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<String> sendMessageToAllForFireDetector() {
         String message = "Dear Subscriber,\n\nA GAS hazard has been detected at Moremi Hall, Osun State Government Secretariat, Oke Pupa, Abere, Osogbo. \n" +
@@ -104,7 +120,7 @@ public class UserController {
     }
 
     /** Send gas detection alert */
-    @PostMapping("/user/send-message-to-all-for-GasDetector")
+    @PostMapping("/send-message-to-all-for-GasDetector")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<String> sendMessageToAllForGasDetector() {
         String message = "Dear Subscriber,\n\nA GAS hazard has been detected at Adegunwa Kitchen. \n" +
@@ -137,7 +153,7 @@ public class UserController {
     }
 
     /** Get user details by phone number */
-    @GetMapping("user/{phonenumber}")
+    @GetMapping("/{phonenumber}")
     
     public ResponseEntity<Users> getReceiverByPhoneNumber(@PathVariable String phonenumber) {
         Users details = service.getDetails(phonenumber);
@@ -145,7 +161,7 @@ public class UserController {
     }
 
     /** Update user details */
-    @PutMapping("/user/admin/{phonenumber}/update")
+    @PutMapping("/admin/{phonenumber}/update")
    
     public ResponseEntity<Users> updateReceiverDetails(@PathVariable String phonenumber, @RequestBody Users newDetails) {
         Users updatedDetails = service.updateProduct(phonenumber, newDetails); 
@@ -153,7 +169,7 @@ public class UserController {
     }
 
     /** Delete user by phone number */
-    @DeleteMapping("/user/admin//{phonenumber}")
+    @DeleteMapping("admin/{phonenumber}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<String> deleteReceiver(@PathVariable String phonenumber) {
         service.deletes(phonenumber);

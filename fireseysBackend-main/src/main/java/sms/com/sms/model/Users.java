@@ -88,4 +88,6 @@ public class Users implements UserDetails {
     public boolean isEnabled() {
         return true; // ✅ Enable the account by default
     }
+
+  
 }

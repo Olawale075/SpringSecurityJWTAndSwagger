@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -27,21 +28,22 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable()) // ❌ Disable CSRF for JWT authentication
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS Enabled
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // ✅ Stateless session
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/user/register", "/user/auth/login", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // ✅ Public Access
-                .requestMatchers("/user/admin/**").hasAuthority("ROLE_ADMIN") // ✅ Admin-Only
-                .requestMatchers("/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN") // ✅ User & Admin Access
-                .anyRequest().authenticated() // All other endpoints require authentication
-            );
-
-        return http.build();
-    }
+  @Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
+    http
+        .csrf(csrf -> csrf.disable()) // ❌ Disable CSRF for JWT authentication
+        .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS Enabled
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // ✅ Stateless session
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/user/register", "/user/auth/login", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // ✅ Public Access
+            .requestMatchers("/user/admin/**").hasAuthority("ROLE_ADMIN") // ✅ Use hasAuthority
+            .requestMatchers("/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN") // ✅ Use hasAnyAuthority
+            .anyRequest().authenticated() // ✅ Other endpoints require authentication
+        )
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class); // ✅ Ensure JwtFilter is added
+    
+    return http.build();
+}
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -55,17 +57,18 @@ public class SecurityConfig {
         provider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(provider);
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*")); // Allow all origins
+        configuration.setAllowedOrigins(List.of("*")); // ✅ Allow all origins (Adjust for production)
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setExposedHeaders(List.of("Authorization")); // ✅ Ensure JWT is exposed
+    
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+    
+    
 }

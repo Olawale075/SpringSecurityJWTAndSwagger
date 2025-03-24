@@ -52,43 +52,37 @@ public class UserServiceImpl implements UserService {  // ✅ Implements UserSer
             return "Phone number already registered.";
         }
     
-        // Assign default role if not provided
+        // ✅ Assign default role if not provided
         if (details.getRole() == null) {
-            details.setRole(UserRole.USER); // Adjust according to your `UserRole` Enum
+            details.setRole(UserRole.ROLE_USER); // Ensure UserRole.USER exists in your Enum
         }
     
-        // ✅ Ensure `is_verified` has a default value before saving
-        details.setIsVerified(false);
-    
-        // ✅ Correct way to encode password using injected PasswordEncoder
-   
+        // ✅ Encode password before saving
         details.setPassword(securityConfig.passwordEncoder().encode(details.getPassword()));
+    
         repository.save(details);
         return "User registered successfully.";
     }
     
+   
     @Override
-    public UserDetails loadUserByUsername(String phoneNumber) throws UsernameNotFoundException {
-        Users user = repository.findByPhonenumber(phoneNumber);
-        
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Users user = repository.findByPhonenumber(username);
         if (user == null) {
-            throw new UsernameNotFoundException("User not found with phone number: " + phoneNumber);
+            throw new UsernameNotFoundException("User not found");
         }
     
-        // Log user details for debugging
-        System.out.println("User found: " + user.getPhonenumber() + ", Role: " + user.getRole());
-    
-        // Ensure role format is correct (ROLE_USER or ROLE_ADMIN)
+        // ✅ Ensure the role has "ROLE_" prefix only once
         String role = user.getRole().name().startsWith("ROLE_") ? user.getRole().name() : "ROLE_" + user.getRole().name();
     
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getPhonenumber())
                 .password(user.getPassword())
-                .authorities(Collections.singleton(new SimpleGrantedAuthority(role)))
+                .authorities(new SimpleGrantedAuthority(role)) // ✅ Use correct role
                 .build();
     }
     
-
+    
     public void deletes(String phonenumber) {
         Users details = repository.findByPhonenumber(phonenumber);
         if (details == null) {
